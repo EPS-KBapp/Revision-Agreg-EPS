@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#183b56" />
+  <title>Mémo EPS Agrégation</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Agrégation interne EPS 2027</p>
+      <h1>Mémo EPS Agrégation</h1>
+      <p class="subtitle">Cartes curatées : auteurs, références, dates, citations, notions contextualisées et programmes EPS.</p>
+    </div>
+    <div class="header-actions">
+      <button id="installBtn" class="ghost" hidden>Installer</button>
+      <button id="resetFilters" class="ghost">Réinitialiser les filtres</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Navigation principale">
+    <button class="tab active" data-tab="dashboard">Tableau de bord</button>
+    <button class="tab" data-tab="programmes">Programmes</button>
+    <button class="tab" data-tab="review">Réviser</button>
+    <button class="tab" data-tab="quiz">Quiz</button>
+    <button class="tab" data-tab="timeline">Frise</button>
+    <button class="tab" data-tab="library">Bibliothèque</button>
+    <button class="tab" data-tab="editor">Ajouter / modifier</button>
+    <button class="tab" data-tab="settings">Import / export</button>
+  </nav>
+
+  <main>
+    <section class="filters card">
+      <div class="filter-group">
+        <label for="searchInput">Recherche</label>
+        <input id="searchInput" type="search" placeholder="Auteur, date, citation, programme, notion…" />
+      </div>
+      <div class="filter-group">
+        <label for="typeFilter">Type</label>
+        <select id="typeFilter"><option value="">Tous</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="programmeFilter">Programme</label>
+        <select id="programmeFilter"><option value="">Tous</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="epreuveFilter">Épreuve</label>
+        <select id="epreuveFilter"><option value="">Toutes</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="tomeFilter">Ensemble</label>
+        <select id="tomeFilter"><option value="">Tous</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="tagFilter">Thème / tag</label>
+        <select id="tagFilter"><option value="">Tous</option></select>
+      </div>
+      <div class="filter-group small">
+        <label for="minImportance">Importance min.</label>
+        <select id="minImportance">
+          <option value="1">★ et +</option><option value="2">★★ et +</option><option value="3" selected>★★★ et +</option><option value="4">★★★★ et +</option><option value="5">★★★★★</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="dashboard" class="panel active">
+      <div class="grid three">
+        <article class="metric card"><span id="countCards">0</span><p>cartes filtrées</p></article>
+        <article class="metric card"><span id="dueCount">0</span><p>cartes à revoir aujourd’hui</p></article>
+        <article class="metric card"><span id="masteredCount">0</span><p>cartes maîtrisées</p></article>
+      </div>
+      <div class="grid two">
+        <article class="card">
+          <h2>Révision ciblée</h2>
+          <p>Les cartes générées automatiquement sans valeur de rappel direct ont été retirées. Le corpus privilégie désormais les savoirs mobilisables : une référence, une idée et un usage.</p>
+          <button data-jump="review" class="primary">Lancer la révision</button>
+        </article>
+        <article class="card">
+          <h2>Répartition du corpus</h2>
+          <div id="typeBreakdown" class="chips"></div>
+        </article>
+      </div>
+      <article class="card">
+        <h2>Cartes prioritaires non maîtrisées</h2>
+        <div id="priorityList" class="list"></div>
+      </article>
+    </section>
+
+    <section id="programmes" class="panel">
+      <article class="card programmes-intro">
+        <h2>Programmes EPS</h2>
+        <p>Cette section synthétise la logique de chaque texte, les éléments à mémoriser et des citations institutionnelles directement réutilisables. Une citation sert d’appui : elle doit toujours être articulée à une idée, un contenu d’enseignement et une condition de validité.</p>
+      </article>
+      <div id="programmesList" class="programmes-list"></div>
+    </section>
+
+    <section id="review" class="panel">
+      <article class="card review-card">
+        <div class="review-meta" id="reviewMeta"></div>
+        <h2 id="reviewQuestion">Prêt à réviser ?</h2>
+        <div id="reviewAnswer" class="answer" hidden></div>
+        <div class="review-actions">
+          <button id="showAnswer" class="primary">Afficher la réponse</button>
+          <button data-grade="again" class="grade" hidden>À revoir</button>
+          <button data-grade="hard" class="grade" hidden>Difficile</button>
+          <button data-grade="good" class="grade" hidden>Correct</button>
+          <button data-grade="easy" class="grade" hidden>Maîtrisé</button>
+        </div>
+        <div class="review-edit-actions">
+          <button id="editCurrent" class="ghost">Modifier cette carte</button>
+          <button id="deleteCurrent" class="danger">Supprimer cette carte</button>
+        </div>
+
+        <form id="reviewEditForm" class="editor-form review-editor" hidden>
+          <div class="review-editor-head">
+            <h3>Modifier directement pendant la révision</h3>
+            <p id="reviewEditNote" class="helper-text"></p>
+          </div>
+          <label>Question<textarea id="reviewEditQuestion" required></textarea></label>
+          <label>Réponse<textarea id="reviewEditAnswer" required></textarea></label>
+          <div class="grid three">
+            <label>Type<input id="reviewEditType" /></label>
+            <label>Épreuve<input id="reviewEditEpreuve" /></label>
+            <label>Importance<select id="reviewEditImportance"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          </div>
+          <label>Ensemble<input id="reviewEditTome" /></label>
+          <label>Tags<input id="reviewEditTags" placeholder="savoirs, évaluation, auteur…" /></label>
+          <div class="form-actions">
+            <button class="primary" type="submit">Enregistrer les modifications</button>
+            <button id="cancelReviewEdit" type="button" class="ghost">Annuler</button>
+          </div>
+        </form>
+      </article>
+    </section>
+
+    <section id="quiz" class="panel">
+      <article class="card">
+        <h2>Quiz généré</h2>
+        <p>Le quiz pioche parmi les cartes filtrées. Les choix sont générés localement à partir du corpus.</p>
+        <button id="newQuiz" class="primary">Nouvelle question</button>
+        <div id="quizBox" class="quiz-box"></div>
+      </article>
+    </section>
+
+    <section id="timeline" class="panel">
+      <article class="card">
+        <h2>Frise chronologique</h2>
+        <p>Repères datés curatés. Clique sur une entrée pour la revoir.</p>
+        <div id="timelineList" class="timeline"></div>
+      </article>
+    </section>
+
+    <section id="library" class="panel">
+      <article class="card">
+        <h2>Bibliothèque du dossier consolidé</h2>
+        <p>Les 138 pages restent accessibles pour retrouver une référence ou créer une carte personnelle. Elles ne sont plus transformées automatiquement en flashcards.</p>
+        <div id="libraryList" class="library-list"></div>
+      </article>
+    </section>
+
+    <section id="editor" class="panel">
+      <article class="card">
+        <h2>Ajouter une carte personnelle</h2>
+        <form id="cardForm" class="editor-form">
+          <input type="hidden" id="editId" />
+          <label>Question<textarea id="formQuestion" required placeholder="Ex. Quelle fonction argumentative pour la loi Haby ?"></textarea></label>
+          <label>Réponse<textarea id="formAnswer" required placeholder="Réponse courte, référence précise et usage en copie…"></textarea></label>
+          <div class="grid three">
+            <label>Type<input id="formType" value="notion" /></label>
+            <label>Épreuve<input id="formEpreuve" value="Transversal" /></label>
+            <label>Importance<select id="formImportance"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></label>
+          </div>
+          <label>Tags<input id="formTags" placeholder="savoirs, évaluation, auteur…" /></label>
+          <div class="form-actions"><button class="primary" type="submit">Enregistrer</button><button type="button" id="clearForm" class="ghost">Vider</button></div>
+        </form>
+      </article>
+      <article class="card">
+        <h2>Mes cartes personnelles</h2>
+        <div id="customCards" class="list"></div>
+      </article>
+    </section>
+
+    <section id="settings" class="panel">
+      <article class="card">
+        <h2>Import / export</h2>
+        <p>Tes progressions, cartes personnelles et corrections réalisées pendant la révision restent dans ce navigateur. Exporte régulièrement tes données.</p>
+        <div class="settings-actions">
+          <button id="exportProgress" class="primary">Exporter progression + cartes</button>
+          <label class="file-label">Importer <input id="importProgress" type="file" accept="application/json" /></label>
+          <button id="resetProgress" class="danger">Réinitialiser la progression</button>
+        </div>
+        <hr class="soft-separator" />
+        <h3>Cartes du corpus modifiées ou retirées</h3>
+        <p id="cardEditStatus" class="helper-text"></p>
+        <button id="resetCorpusEdits" class="ghost">Restaurer toutes les cartes du corpus</button>
+        <pre id="settingsLog" class="log"></pre>
+      </article>
+      <article class="card">
+        <h2>Mise à jour GitHub Pages</h2>
+        <ol>
+          <li>Remplace <strong>index.html</strong>, <strong>app.js</strong>, <strong>styles.css</strong>, <strong>eps-corpus.js</strong> et <strong>sw.js</strong> à la racine du dépôt.</li>
+          <li>Conserve les icônes et le manifeste existants.</li>
+          <li>Après publication, recharge une fois avec <strong>Ctrl + F5</strong>.</li>
+        </ol>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <span id="corpusInfo"></span>
+    <span>Fonctionne hors ligne après le premier chargement.</span>
+  </footer>
+  <script>
+    /* Charge le corpus depuis la racine. Compatibilité conservée avec l’ancienne organisation /data. */
+    (function () {
+      const sources = ['./eps-corpus.js', './data/eps-corpus.js'];
+      let index = 0;
+      function loadApp() {
+        const app = document.createElement('script');
+        app.src = './app.js';
+        app.onload = () => document.documentElement.classList.add('app-ready');
+        app.onerror = () => console.error('Impossible de charger app.js');
+        document.body.appendChild(app);
+      }
+      function loadCorpus() {
+        if (index >= sources.length) {
+          console.error('Corpus EPS introuvable. Vérifie que eps-corpus.js est à la racine du dépôt.');
+          loadApp();
+          return;
+        }
+        const src = sources[index++];
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => {
+          if (window.EPS_CORPUS && Array.isArray(window.EPS_CORPUS.cards) && window.EPS_CORPUS.cards.length) loadApp();
+          else { script.remove(); loadCorpus(); }
+        };
+        script.onerror = () => { script.remove(); loadCorpus(); };
+        document.body.appendChild(script);
+      }
+      loadCorpus();
+    })();
+  </script>
+</body>
+</html>
